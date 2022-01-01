@@ -4,11 +4,12 @@
 
 
 ## 准备
-首先下载[ecj.jar](https://mvnrepository.com/artifact/org.eclipse.jdt.core.compiler/ecj/4.6.1)和idea提供反编译的java-decompiler.jar，将其放置在脚本的相同目录中
+首先下载[ecj.jar](https://mvnrepository.com/artifact/org.eclipse.jdt.core.compiler/ecj/4.6.1)和idea提供反编译的java-decompiler.jar，将其放置在脚本的相同目录中。
 
 
 ## 使用方法
 
+推荐在windows上使用
 ### 1、反编译项目
 默认情况下使用java-decompiler.jar进行反编译
 
