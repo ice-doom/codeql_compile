@@ -24,6 +24,9 @@ def verify(file_jar, my_path):
 def java_decompiler_run():
     # 搜索源项目中包含.jar的所有路径
     _sub = subprocess.getstatusoutput('java -cp "{}" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=true {} {}'.format(java_decompiler_path, app_path, save_path))
+    if _sub[0] != 0:
+        print(_sub[1])
+        os._exit()
     app_jars_path = sorted(pathlib.Path(save_path).glob('**/*.jar'))
     # 反编译后会生成jar文件，将文件内容解压出来
     for app_jar_path in app_jars_path:
@@ -79,7 +82,12 @@ def compile_cmd_file_create():
     if dependencies_path:
         libs = ""
         for x in pathlib.Path(dependencies_path).iterdir():
-            libs += "{};".format(x.name)
+            if x.is_dir():
+                search_jars_path = pathlib.Path(x).glob('**/*.jar')
+                for search_jar_path in search_jars_path:
+                    libs += "{};".format(search_jar_path.name)
+            else:
+                libs += "{};".format(x.name)
         compile_cmd = "cd {} && java -jar {} -encoding UTF-8 -classpath \"{}\" -8 -warn:none -noExit @{}/file.txt".format(
             dependencies_path, ecj_absolute_path, libs, save_path)
 
