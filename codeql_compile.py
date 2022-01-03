@@ -81,13 +81,9 @@ def compile_cmd_file_create():
 
     if dependencies_path:
         libs = ""
-        for x in pathlib.Path(dependencies_path).iterdir():
-            if x.is_dir():
-                search_jars_path = pathlib.Path(x).glob('**/*.jar')
-                for search_jar_path in search_jars_path:
-                    libs += "{};".format(search_jar_path.name)
-            else:
-                libs += "{};".format(x.name)
+        search_jars_path = pathlib.Path(x).glob('**/*.jar')
+        for search_jar_path in search_jars_path:
+            libs += "{};".format(search_jar_path.name)
         compile_cmd = "cd {} && java -jar {} -encoding UTF-8 -classpath \"{}\" -8 -warn:none -noExit @{}/file.txt".format(
             dependencies_path, ecj_absolute_path, libs, save_path)
 
