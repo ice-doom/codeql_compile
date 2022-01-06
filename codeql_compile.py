@@ -26,7 +26,7 @@ def java_decompiler_run():
     _sub = subprocess.getstatusoutput('java -cp "{}" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=true {} {}'.format(java_decompiler_path, app_path, save_path))
     if _sub[0] != 0:
         print(_sub[1])
-        os._exit()
+        sys.exit("java_decompiler 执行失败......")
     app_jars_path = sorted(pathlib.Path(save_path).glob('**/*.jar'))
     # 反编译后会生成jar文件，将文件内容解压出来
     for app_jar_path in app_jars_path:
@@ -81,7 +81,7 @@ def compile_cmd_file_create():
 
     if dependencies_path:
         libs = ""
-        search_jars_path = pathlib.Path(x).glob('**/*.jar')
+        search_jars_path = pathlib.Path(dependencies_path).glob('**/*.jar')
         for search_jar_path in search_jars_path:
             libs += "{};".format(search_jar_path.name)
         compile_cmd = "cd {} && java -jar {} -encoding UTF-8 -classpath \"{}\" -8 -warn:none -noExit @{}/file.txt".format(
@@ -111,25 +111,20 @@ dependencies_path = args.dep
 save_path = args.out
 
 if app_path is not None and dependencies_path is not None:
-    try:
-        ecj_path = verify("ecj.jar", self_ecj_path)
-        java_decompiler_path = verify("java-decompiler.jar", self_java_decompiler_path)
-        if ecj_path is False or java_decompiler_path is False:
-            os._exit()
-        save_path = pathlib.Path.joinpath(pathlib.Path(app_path).parent, "{}_save_{}".format(pathlib.Path(app_path).name, int(time.time())))
-        save_path.mkdir()
-        java_decompiler_run()
-        compile_cmd_file_create()
-    except Exception as e:
-        print("请在当前目录存放ecj.jar、java-decompiler.jar，或者通过self_java_decompiler_path、self_ecj_path指定自定义路径")
+    ecj_path = verify("ecj.jar", self_ecj_path)
+    java_decompiler_path = verify("java-decompiler.jar", self_java_decompiler_path)
+    if ecj_path is False or java_decompiler_path is False:
+        sys.exit("请在当前目录存放ecj.jar、java-decompiler.jar，或者通过self_java_decompiler_path、self_ecj_path指定自定义路径")
+    save_path = pathlib.Path.joinpath(pathlib.Path(app_path).parent, "{}_save_{}".format(pathlib.Path(app_path).name, int(time.time())))
+    save_path.mkdir()
+    java_decompiler_run()
+    compile_cmd_file_create()
+
 elif args.check is not None and app_path is not None and save_path is not None:
-    try:
-        procyon_path = verify("procyon.jar", self_procyon_path)
-        if procyon_path is False:
-            os._exit()
-        check()
-    except Exception as e:
-        print("请在当前目录存放procyon.jar，或者通过self_procyon_path指定自定义路径")
+    procyon_path = verify("procyon.jar", self_procyon_path)
+    if procyon_path is False:
+        sys.exit("请在当前目录存放procyon.jar，或者通过self_procyon_path指定自定义路径")
+    check()
 else:
     parse.print_help()
     sys.exit()
