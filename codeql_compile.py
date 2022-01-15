@@ -1,15 +1,16 @@
+# coding=utf-8
 import pathlib, zipfile, subprocess
 import os, sys, time, re
 import argparse
 import shutil
 
 
-# 指定自定义java-decompiler的路径
-self_java_decompiler_path = r'D:\idea_v2019\IntelliJ IDEA 2019.3.5\plugins\java-decompiler\lib\java-decompiler.jar'
+# java-decompiler路径
+self_java_decompiler_path = r'/Users/x/Downloads/codeql_compile/java-decompiler.jar'
 # 指定自定义ecj的路径
-self_ecj_path = r"D:\project\java\apps\ecj-4.6.1.jar"
+self_ecj_path = r"/Users/x/Downloads/codeql_compile/ecj-4.6.1.jar"
 # 指定自定义procyon的路径
-self_procyon_path = r"D:\project\java\apps\procyon-decompiler-0.6-prerelease.jar"
+self_procyon_path = r"/x/helu/Downloads/codeql_compile/procyon.jar"
 
 
 # 用来校验本地的ecj、java_decompiler路径是否正确
@@ -39,15 +40,19 @@ def java_decompiler_run():
 
 # 先尝试编译成class，定位错误文件再使用procyon反编译替换
 def check():
-    _sub = subprocess.getstatusoutput('{}/run.cmd'.format(save_path))
+    _sub = subprocess.getstatusoutput('{}/run.sh'.format(save_path))
     # 正则匹配错误文件路径
     re_matchs = set(re.findall("ERROR in (.*)? \(at line", _sub[1]))
 
     # 确认是否未编译生成class
-    for re_match in re_matchs:
-        is_file = pathlib.Path(re_match.replace(".java", ".class")).is_file()
-        if is_file:
-            re_matchs.remove(re_match)
+    try:
+        for re_match in re_matchs:
+            is_file = pathlib.Path(re_match.replace(".java", ".class")).is_file()
+            if is_file:
+                re_matchs.remove(re_match)
+    except Exception as e:
+        print(e)
+
 
     app_jars_name = [jar_path.name.rstrip('.jar') for jar_path in pathlib.Path(app_path).glob('**/*.jar')]
     error_jars = [app_jar_name for app_jar_name in app_jars_name for re_match in re_matchs if app_jar_name not in re_match]
@@ -61,6 +66,7 @@ def check():
     # 使用 procyon 反编译class文件
     for class_path in error_classes:
         class_path = str(class_path).replace(save_path, app_path).replace(".java", ".class")
+        os.mkdir(class_path+"/procyon_class")
         _sub = subprocess.getstatusoutput('java -jar "{}" {} -o {}/procyon_class'.format(procyon_path, class_path, save_path))
     # 将反编译后的文件替换原先文件
     for class_path in pathlib.Path(save_path+"/procyon_class").glob('**/*.java'):
@@ -92,6 +98,9 @@ def compile_cmd_file_create():
 
     with open("{}/run.sh".format(save_path), "w+") as f:
         f.write(compile_cmd)
+        # 给予权限
+        if "win" not in sys.platform:
+            os.system('chmod u+x {}/run.sh'.format(save_path))
 
 
 epilog = r'''Example:
@@ -99,7 +108,7 @@ python3 codeql_compile.py -a D:\java\apps\cloud -d "D:\java\apps\cloud\lib"
 python3 codeql_compile.py -a D:\java\apps\cloud -o "D:\java\apps\cloud_save_1641018608 -c"
 '''
 parse = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
-parse.add_argument('-a', '--app', help='输入源项目路径')
+parse.add_argument('-a', '--app', help='输入项目根路径')
 parse.add_argument('-d', '--dep', help='输入依赖包路径')
 parse.add_argument('-c', '--check', help='对java-decompiler反编译内容进行检测', action="store_true")
 parse.add_argument('-o', '--out', help='输入刚刚已经反编译好的存放路径')
