@@ -2,10 +2,10 @@
 import pathlib, zipfile, subprocess
 import os, sys, time, re
 import argparse
+import platform
 import shutil
 
-
-# java-decompiler路径
+# 指定自定义java-decompiler路径
 self_java_decompiler_path = r'/Users/x/Downloads/codeql_compile/java-decompiler.jar'
 # 指定自定义ecj的路径
 self_ecj_path = r"/Users/x/Downloads/codeql_compile/ecj-4.6.1.jar"
@@ -24,7 +24,9 @@ def verify(file_jar, my_path):
 
 def java_decompiler_run():
     # 搜索源项目中包含.jar的所有路径
-    _sub = subprocess.getstatusoutput('java -cp "{}" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=true {} {}'.format(java_decompiler_path, app_path, save_path))
+    _sub = subprocess.getstatusoutput(
+        'java -cp "{}" org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=true {} {}'.format(
+            java_decompiler_path, app_path, save_path))
     if _sub[0] != 0:
         print(_sub[1])
         sys.exit("java_decompiler 执行失败......")
@@ -40,37 +42,45 @@ def java_decompiler_run():
 
 # 先尝试编译成class，定位错误文件再使用procyon反编译替换
 def check():
-    _sub = subprocess.getstatusoutput('{}/run.sh'.format(save_path))
+    if platform.system().lower() == 'windows':
+        _sub = subprocess.getstatusoutput('{}/run.cmd'.format(save_path))
+    else:
+        _sub = subprocess.getstatusoutput('{}/run.sh'.format(save_path))
     # 正则匹配错误文件路径
     re_matchs = set(re.findall("ERROR in (.*)? \(at line", _sub[1]))
 
     # 确认是否未编译生成class
     try:
-        for re_match in re_matchs:
+        for re_match in re_matchs.copy():
             is_file = pathlib.Path(re_match.replace(".java", ".class")).is_file()
             if is_file:
                 re_matchs.remove(re_match)
     except Exception as e:
-        print(e)
-
+        print("waring:" + e)
 
     app_jars_name = [jar_path.name.rstrip('.jar') for jar_path in pathlib.Path(app_path).glob('**/*.jar')]
-    error_jars = [app_jar_name for app_jar_name in app_jars_name for re_match in re_matchs if app_jar_name not in re_match]
+    error_jars = [app_jar_name for app_jar_name in app_jars_name for re_match in re_matchs if
+                  app_jar_name not in re_match]
     error_classes = re_matchs.difference(set(error_jars))
     # 使用 procyon 反编译jar包
     for app_jar_path in pathlib.Path(app_path).glob('**/*.jar'):
         jar_folder = app_jar_path.name.rstrip('.jar')
         if jar_folder in error_jars:
-            _sub = subprocess.getstatusoutput('java -jar "{}" {} -o {}/{}'.format(procyon_path, app_jar_path, save_path, jar_folder))
+            _sub = subprocess.getstatusoutput(
+                'java -jar "{}" {} -o {}/{}'.format(procyon_path, app_jar_path, save_path, jar_folder))
 
     # 使用 procyon 反编译class文件
+    if not os.path.exists(save_path + "/procyon_class"):
+        os.mkdir(save_path + "/procyon_class")
     for class_path in error_classes:
         class_path = str(class_path).replace(save_path, app_path).replace(".java", ".class")
-        os.mkdir(class_path+"/procyon_class")
-        _sub = subprocess.getstatusoutput('java -jar "{}" {} -o {}/procyon_class'.format(procyon_path, class_path, save_path))
+        _sub = subprocess.getstatusoutput(
+            'java -jar "{}" {} -o {}/procyon_class'.format(procyon_path, class_path, save_path))
     # 将反编译后的文件替换原先文件
-    for class_path in pathlib.Path(save_path+"/procyon_class").glob('**/*.java'):
-        to_class_path = [class_path for class_path in pathlib.Path(save_path).glob('**/{}'.format(class_path.relative_to("{}/procyon_class".format(save_path)))) if "procyon_class" not in str(class_path)]
+    for class_path in pathlib.Path(save_path + "/procyon_class").glob('**/*.java'):
+        to_class_path = [class_path for class_path in pathlib.Path(save_path).glob(
+            '**/{}'.format(class_path.relative_to("{}/procyon_class".format(save_path)))) if
+                         "procyon_class" not in str(class_path)]
         shutil.move(str(class_path), str(to_class_path[0]))
 
     shutil.rmtree(save_path + "/procyon_class")
@@ -99,7 +109,7 @@ def compile_cmd_file_create():
     with open("{}/run.sh".format(save_path), "w+") as f:
         f.write(compile_cmd)
         # 给予权限
-        if "win" not in sys.platform:
+        if platform.system().lower() != 'windows':
             os.system('chmod u+x {}/run.sh'.format(save_path))
 
 
@@ -124,7 +134,8 @@ if app_path is not None and dependencies_path is not None:
     java_decompiler_path = verify("java-decompiler.jar", self_java_decompiler_path)
     if ecj_path is False or java_decompiler_path is False:
         sys.exit("请在当前目录存放ecj.jar、java-decompiler.jar，或者通过self_java_decompiler_path、self_ecj_path指定自定义路径")
-    save_path = pathlib.Path.joinpath(pathlib.Path(app_path).parent, "{}_save_{}".format(pathlib.Path(app_path).name, int(time.time())))
+    save_path = pathlib.Path.joinpath(pathlib.Path(app_path).parent,
+                                      "{}_save_{}".format(pathlib.Path(app_path).name, int(time.time())))
     save_path.mkdir()
     java_decompiler_run()
     compile_cmd_file_create()
