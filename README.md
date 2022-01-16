@@ -9,14 +9,14 @@
 
 ## 使用方法
 
-1.在windows上使用  
+1.支持win和mac  
 2.第二步不是必须项，可以直接执行第一步，然后就可以开始创建数据库  
 3.最好限制下要分析的包范围，过大反而不利于分析。
 
 ### 1、反编译项目
 默认情况下使用java-decompiler.jar进行反编译，会在项目源代码路径的父级目录创建以**项目名+_save+时间戳**命名的目录
 
-参数`-a`：指定项目源代码路径  
+参数`-a`：指定项目根路径  
 参数`-d`：指定反编译代码的依赖包路径
 ```cmd
 python3 codeql_compile.py -a D:\project\java\apps\2\cloud -d D:\project\java\apps\BOOT-INF\lib
