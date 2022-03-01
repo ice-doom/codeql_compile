@@ -218,3 +218,24 @@ if __name__ == '__main__':
         else:
             parse.print_help()
             sys.exit()
+    else:
+        if app_path is not None and dependencies_path is not None:
+            ecj_path = verify("ecj.jar", self_ecj_path)
+            java_decompiler_path = verify("java-decompiler.jar", self_java_decompiler_path)
+            if ecj_path is False or java_decompiler_path is False:
+                sys.exit("请在当前目录存放ecj.jar、java-decompiler.jar，或者通过self_java_decompiler_path、self_ecj_path指定自定义路径")
+            save_path = pathlib.Path.joinpath(pathlib.Path(app_path).parent,
+                                              "{}_save_{}".format(pathlib.Path(app_path).name, int(time.time())))
+            save_path.mkdir()
+            java_decompiler_run()
+            compile_cmd_file_create()
+        elif app_path is not None:
+            create_database(app_path, save_path)
+        elif args.check is not None and app_path is not None and save_path is not None:
+            procyon_path = verify("procyon.jar", self_procyon_path)
+            if procyon_path is False:
+                sys.exit("请在当前目录存放procyon.jar，或者通过self_procyon_path指定自定义路径")
+            check()
+        else:
+            parse.print_help()
+            sys.exit()
