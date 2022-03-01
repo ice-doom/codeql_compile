@@ -168,6 +168,7 @@ def create_database(app_path, include=None, source=None):
 
 
 epilog = r'''Example:
+python3 codeql_compile.py -a D:\java\apps\cloud -d "D:\java\apps\cloud\lib"  仅编译程序
 python3 codeql_compile.py -l java -a D:\java\apps\cloud -d "D:\java\apps\cloud\lib"  普通创建
 python3 codeql_compile.py -l java -a D:\java\apps\cloud -d "D:\java\apps\cloud\lib -i xml"  包含xml文件
 '''
