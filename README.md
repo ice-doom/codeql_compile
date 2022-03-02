@@ -45,7 +45,7 @@ D:\codeql.exe database create D:\codeql\databases\demo-database --language="java
 ```
 
 ### 4、直接创建数据库
-会在当前目录生成`项目名_database`的数据库
+会在当前目录生成`项目名_database`的数据库  
 参数`-l`:指定语言，暂时支持java  
 参数`-i`:指定额外包含的文件，暂时只支持xml文件
 ```cmd
